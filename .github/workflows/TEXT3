@@ -1,0 +1,369 @@
+name: OnePlus Kernel Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: "选择目标机型"
+        required: true
+        type: choice
+        options:
+          - 一加 Ace2
+          - 一加 AcePro
+          - 一加 10T
+          - 一加 Ace2Pro
+          - 一加 11
+          - 一加 12R
+          - 一加 12
+          - 一加 Ace3V
+          - 一加 Pad2
+          - 一加 Ace5
+          - 一加 Ace3Pro
+      cpu_branch:
+        description: "CPU分支"
+        required: true
+        default: 'sm8550'
+        type: choice
+        options:
+          - sm8475
+          - sm8550
+          - sm8650
+      config_file:
+        description: "配置文件"
+        required: true
+        default: 'oneplus_ace2pro_v'
+      cpu_code:
+        description: "处理器代号"
+        required: true
+        default: 'kalama'
+      android_version:
+        description: "Android版本"
+        required: true
+        default: 'android13'
+        type: choice
+        options:
+          - android12
+          - android13
+          - android14
+      kernel_version:
+        description: "内核版本"
+        required: true
+        default: '5.15'
+        type: choice
+        options:
+          - 5.10
+          - 5.15
+          - 6.1
+      susfs_ci:
+        description: "使用CI获取SUSFS模块"
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set Device Parameters
+        run: |
+          case ${{ github.event.inputs.device }} in
+            "一加 Ace2")
+              echo "cpu_branch=sm8475" >> $GITHUB_ENV
+              echo "config_file=oneplus_ace2_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android12" >> $GITHUB_ENV
+              echo "kernel_version=5.10" >> $GITHUB_ENV
+              ;;
+            "一加 AcePro")
+              echo "cpu_branch=sm8475" >> $GITHUB_ENV
+              echo "config_file=oneplus_acepro_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android12" >> $GITHUB_ENV
+              echo "kernel_version=5.10" >> $GITHUB_ENV
+              ;;
+            "一加 10T")
+              echo "cpu_branch=sm8475" >> $GITHUB_ENV
+              echo "config_file=oneplus_10t_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android12" >> $GITHUB_ENV
+              echo "kernel_version=5.10" >> $GITHUB_ENV
+              ;;
+            "一加 Ace2Pro")
+              echo "cpu_branch=sm8550" >> $GITHUB_ENV
+              echo "config_file=oneplus_ace2pro_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android13" >> $GITHUB_ENV
+              echo "kernel_version=5.15" >> $GITHUB_ENV
+              ;;
+            "一加 11")
+              echo "cpu_branch=sm8550" >> $GITHUB_ENV
+              echo "config_file=oneplus_11_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android13" >> $GITHUB_ENV
+              echo "kernel_version=5.15" >> $GITHUB_ENV
+              ;;
+            "一加 12R")
+              echo "cpu_branch=sm8550" >> $GITHUB_ENV
+              echo "config_file=oneplus_12r_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android13" >> $GITHUB_ENV
+              echo "kernel_version=5.15" >> $GITHUB_ENV
+              ;;
+            "一加 12")
+              echo "cpu_branch=sm8650" >> $GITHUB_ENV
+              echo "config_file=oneplus_12_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android14" >> $GITHUB_ENV
+              echo "kernel_version=6.1" >> $GITHUB_ENV
+              ;;
+            "一加 Ace3V")
+              echo "cpu_branch=sm8650" >> $GITHUB_ENV
+              echo "config_file=oneplus_ace3v_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android14" >> $GITHUB_ENV
+              echo "kernel_version=6.1" >> $GITHUB_ENV
+              ;;
+            "一加 Pad2")
+              echo "cpu_branch=sm8650" >> $GITHUB_ENV
+              echo "config_file=oneplus_pad2_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android14" >> $GITHUB_ENV
+              echo "kernel_version=6.1" >> $GITHUB_ENV
+              ;;
+            "一加 Ace5")
+              echo "cpu_branch=sm8650" >> $GITHUB_ENV
+              echo "config_file=oneplus_ace5_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android14" >> $GITHUB_ENV
+              echo "kernel_version=6.1" >> $GITHUB_ENV
+              ;;
+            "一加 Ace3Pro")
+              echo "cpu_branch=sm8650" >> $GITHUB_ENV
+              echo "config_file=oneplus_ace3pro_v" >> $GITHUB_ENV
+              echo "cpu_code=kalama" >> $GITHUB_ENV
+              echo "android_version=android14" >> $GITHUB_ENV
+              echo "kernel_version=6.1" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Display Configuration
+        run: |
+          echo "=========================================="
+          echo "       OnePlus Kernel Build Configuration"
+          echo "=========================================="
+          echo "机型: ${{ github.event.inputs.device }}"
+          echo "CPU分支: ${{ env.cpu_branch }}"
+          echo "配置文件: ${{ env.config_file }}"
+          echo "处理器代号: ${{ env.cpu_code }}"
+          echo "Android版本: ${{ env.android_version }}"
+          echo "内核版本: ${{ env.kernel_version }}"
+          echo "SUSFS模块来源: ${{ github.event.inputs.susfs_ci && 'CI' || 'Release' }}"
+          echo "=========================================="
+          echo "请确认参数是否正确。如果需要修改，请重新触发工作流"
+
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 8192
+          temp-reserve-mb: 2048
+          swap-size-mb: 8192
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "Numbersf"
+          git config --global user.email "263623064@qq.com"
+
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt upgrade -y
+          sudo apt install -y python3 git curl
+
+      - name: Install repo tool
+        run: |
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
+          chmod a+x ~/repo
+          sudo mv ~/repo /usr/local/bin/repo
+
+      - name: Initialize repo and sync
+        run: |
+          mkdir kernel_workspace && cd kernel_workspace
+          repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/${{ env.cpu_branch }} -m ${{ env.config_file }}.xml --depth=1
+          repo sync
+          rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
+          rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
+
+      - name: Force remove -dirty suffix
+        run: |
+          cd kernel_workspace/kernel_platform
+          sed -i 's/ -dirty//g' common/scripts/setlocalversion
+          sed -i 's/ -dirty//g' msm-kernel/scripts/setlocalversion
+          sed -i 's/ -dirty//g' external/dtc/scripts/setlocalversion
+          sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' common/scripts/setlocalversion
+          git add -A
+          git commit -m "Force remove -dirty suffix from kernel version"
+
+      - name: Add KernelSU-SukiSU-Ultra
+        run: |
+          cd kernel_workspace/kernel_platform
+          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
+          cd ./KernelSU
+          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
+          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          export KSU_VERSION=$KSU_VERSION
+          sed -i "s/DKSU_VERSION=12500/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+
+      - name: Apply SUSFS Patches SukiSU
+        run: |
+          cd kernel_workspace
+          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.android_version }}-${{ env.kernel_version }}
+          git clone https://github.com/ShirkNeko/SukiSU_patch.git
+          cd kernel_platform
+          # Copy SUSFS patches
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.android_version }}-${{ env.kernel_version }}.patch ./common/
+          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
+          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+          
+          echo "正在给内核打susfs补丁"
+          cd ./common
+          patch -p1 < 50_add_susfs_in_gki-${{ env.android_version }}-${{ env.kernel_version }}.patch || true
+          echo "完成"
+
+      - name: Apply Hide Stuff Patches
+        run: |
+          cd kernel_workspace/kernel_platform/common
+          cp ../../SukiSU_patch/69_hide_stuff.patch ./
+          echo "正在打隐藏应用补丁"
+          patch -p1 -F 3 < 69_hide_stuff.patch
+
+      - name: Apply New Hooks Patches
+        run: |
+          cd kernel_workspace/kernel_platform/common
+          cp ../../SukiSU_patch/hooks/new_hooks.patch ./
+          echo "正在打vfs补丁"
+          patch -p1 -F 3 < new_hooks.patch
+          echo "完成"
+
+      - name: Add SUSFS Configuration Settings
+        run: |
+          cd kernel_workspace/kernel_platform
+          # Add KSU configuration settings
+          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
+          # Add VFS configuration settings
+          echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
+          # Add SUSFS configuration settings
+          echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # Remove check_defconfig
+          sed -i 's/check_defconfig//' ./common/build.config.gki
+
+      - name: Build kernel
+        if: env.cpu_branch == 'sm8650'
+        run: |
+          cd kernel_workspace
+          ./kernel_platform/build_with_bazel.py -t ${{ env.cpu_code }} gki
+
+      - name: Fallback build kernel
+        if: env.cpu_branch != 'sm8650'
+        run: |
+          cd kernel_workspace
+          LTO=thin ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ env.cpu_code }} gki
+
+      - name: Make AnyKernel3
+        if: env.cpu_branch != 'sm8475'
+        run: |
+          # 克隆 AnyKernel3 仓库
+          git clone https://github.com/Numbersf/AnyKernel3 --depth=1
+          rm -rf ./AnyKernel3/.git
+          # 定义目录路径
+          dir1="./kernel_workspace/kernel_platform/out/msm-kernel-${{ env.cpu_code }}-gki/dist/"
+          dir2="./kernel_workspace/kernel_platform/common/out/arch/arm64/boot/"
+          target1="./AnyKernel3/"
+          target2="./kernel_workspace/kernel"
+          # 在第一个目录中查找 Image 文件
+          if find "$dir1" -name "Image" | grep -q "Image"; then
+            echo "文件 Image 在dist目录中"
+            cp "$dir1"Image "$target1"
+            cp "$dir1"Image "$target2"
+          else
+            # 在第二个目录中查找 Image 文件
+            if find "$dir2" -name "Image" | grep -q "Image"; then
+              echo "文件 Image 在arch/arm64/boot目录中"
+              cp "$dir2"Image "$target1"
+              cp "$dir2"Image "$target2"
+            else
+              # 在 kernel_workspace/kernel_platform/common/out/ 的所有子目录中查找 Image 文件
+              echo "在 kernel_workspace/kernel_platform/common/out/ 的所有子目录中查找 Image 文件"
+              image_path=$(find "./kernel_workspace/kernel_platform/common/out/" -name "Image" | head -n 1)
+              
+              if [ -n "$image_path" ]; then
+                echo "找到 Image 文件: $image_path"
+                cp "$image_path" "$target1"
+                cp "$image_path" "$target2"
+              else
+                echo "在所有目录中未找到 Image 文件，构建可能失败"
+              fi
+            fi
+          fi
+
+      - name: Make AnyKernel3 sm8475
+        if: env.cpu_branch == 'sm8475'
+        run: |
+          git clone https://github.com/Numbersf/AnyKernel3 --depth=1
+          rm -rf ./AnyKernel3/.git
+          cp kernel_workspace/kernel_platform/out/msm-${{ env.cpu_code }}-${{ env.cpu_code }}-gki/dist/Image ./AnyKernel3/
+
+      - name: Apply patch_linux and replace Image
+        run: |
+          cd kernel_workspace/kernel_platform/out/msm-kernel-${{ env.cpu_code }}-gki/dist
+          curl -LO https://raw.githubusercontent.com/Numbersf/Action-Build/main/patch_linux
+          chmod +x patch_linux
+          ./patch_linux
+          rm -f Image
+          mv oImage Image
+          cp Image $GITHUB_WORKSPACE/AnyKernel3/Image
+
+      - name: Download Latest SUSFS Module from CI
+        if: ${{ github.event.inputs.susfs_ci == 'true' }}
+        run: |
+          LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs" | jq -r '.workflow_runs[0].id')
+          
+          ARTIFACT_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs/$LATEST_RUN_ID/artifacts" | jq -r '.artifacts[0].archive_download_url')
+          
+          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ksu_module_susfs.zip "$ARTIFACT_URL"
+          cp ksu_module_susfs.zip ./AnyKernel3/
+
+      - name: Download Latest SUSFS Module from Release
+        if: ${{ github.event.inputs.susfs_ci == 'false' }}
+        run: |
+          wget https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
+          cp ksu_module_susfs_1.5.2+.zip ./AnyKernel3/
+
+      - name: Upload AnyKernel3
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnyKernel3_KernelSU_${{ env.KSUVER }}_${{ env.config_file }}
+          path: ./AnyKernel3/*
