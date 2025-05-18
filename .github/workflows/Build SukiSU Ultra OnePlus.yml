@@ -84,7 +84,7 @@ on:
           - perf
       SUFFIX:
         type: string
-        description: "自定义内核后缀 (留空则不修改)"
+        description: "自定义内核后缀 (留空则使用随机字符串)"
         required: false
         default: ""
       SUSFS_CI:
@@ -139,8 +139,8 @@ jobs:
           echo "Selected BUILD_METHOD: ${{ github.event.inputs.BUILD_METHOD }}"
           echo "Custom SUFFIX: ${{ github.event.inputs.SUFFIX }}"
           echo "Selected SUSFS_CI: ${{ github.event.inputs.SUSFS_CI }}"
-          echo "Selected ZRAM: ${{ github.event.inputs.ZRAM }}"
           echo "Selected VFS: ${{ github.event.inputs.VFS }}"
+          echo "Selected ZRAM: ${{ github.event.inputs.ZRAM }}"
 
       - name: Install repo tool
         run: |
@@ -152,7 +152,7 @@ jobs:
         run: |
           mkdir kernel_workspace && cd kernel_workspace
           repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/${{ github.event.inputs.CPU }} -m ${{ github.event.inputs.FEIL }}.xml --depth=1
-          repo sync
+          repo sync -c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync
           if [  -e kernel_platform/common/BUILD.bazel ]; then
           sed -i '/^[[:space:]]*"protected_exports_list"[[:space:]]*:[[:space:]]*"android\/abi_gki_protected_exports_aarch64",$/d' kernel_platform/common/BUILD.bazel
           fi
@@ -193,20 +193,25 @@ jobs:
         if: ${{ github.event.inputs.SUFFIX == '' }}
         run: |
           cd kernel_workspace
+
+          RANDOM_DIGIT=$(od -An -N1 -tu1 < /dev/urandom | tr -d '[:space:]' | awk '{print $1 % 11}')
+          RANDOM_HASH=$(od -An -N7 -tx1 /dev/urandom | tr -d ' \n')
+          RANDOM_SUFFIX="${RANDOM_DIGIT}-o-g${RANDOM_HASH}"
+
           for path in \
             kernel_platform/common/scripts/setlocalversion \
             kernel_platform/msm-kernel/scripts/setlocalversion \
             kernel_platform/external/dtc/scripts/setlocalversion; do
-              echo '' >> "$path"
-              echo '# Append random suffix if SUFFIX is not set' >> "$path"
-              echo 'if [ -z "${{ github.event.inputs.SUFFIX }}" ]; then' >> "$path"
-              echo '  RANDOM_DIGIT=$((RANDOM % 11))' >> "$path"
-              echo '  RANDOM_HASH=$(hexdump -n 7 -e '\''7/1 "%02x"'\'' /dev/urandom)' >> "$path"
-              echo '  res="$res-$RANDOM_DIG-o-g$RANDOM_HASH"' >> "$path"
-              echo 'fi' >> "$path"
+
+              # 清理默认后缀
+              sed -i '/^res=/a res=$(echo "$res" | sed -E '\''s/-[0-9]+-o-g[0-9a-fA-F]{7,}//g'\'')' "$path"
+
+              # 替换 echo "$res" 为带随机后缀
+              sed -i "\$s|echo \"\\\$res\"|echo \"\$res-$RANDOM_SUFFIX\"|" "$path"
           done
+
           git add -A
-          git commit -m "Add random suffix if SUFFIX is not set"
+          git commit -m "Fix: inject random suffix"
 
       # 添加 SukiSU Ultra
       - name: Add KernelSU-SukiSU Ultra
@@ -240,6 +245,10 @@ jobs:
           fi
 
           cd ./common
+          if [[ "${{ github.event.inputs.FEIL }}" == "oneplus_13" || "${{ github.event.inputs.FEIL }}" == "oneplus_ace5_pro" ]]; then
+           sed -i 's/-32,12 +32,38/-32,11 +32,37/g' 50_add_susfs_in_gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}.patch
+           sed -i '/#include <trace\/hooks\/fs.h>/d' 50_add_susfs_in_gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}.patch
+          fi
           patch -p1 < 50_add_susfs_in_gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}.patch || true
           echo "susfs_patch完成"
 
@@ -255,10 +264,10 @@ jobs:
         run: |
           cd kernel_workspace/kernel_platform/common
           if [ "${{ github.event.inputs.VFS }}" = "true" ]; then
-          cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
-          echo "正在打vfs补丁"
-          patch -p1 -F 3 < syscall_hooks.patch
-          echo "vfs_patch完成"
+            cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
+            echo "正在打vfs补丁"
+            patch -p1 -F 3 < syscall_hooks.patch
+            echo "vfs_patch完成"
           fi
 
       - name: Apply LZ4KD
